@@ -5,52 +5,40 @@ const CategoryDishes = () => {
   const { categoryId } = useParams();
   const [dishes, setDishes] = useState([]);
   const [sortOrder, setSortOrder] = useState("asc");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Fetch dishes based on categoryId on initial page load
   useEffect(() => {
     const fetchDishes = async () => {
       try {
-        const response = await fetch(`http://localhost:4000/api/dishes`);
-        if (!response.ok) throw new Error("Failed to fetch dishes");
-
-        const data = await response.json();
-        const filteredDishes = data.filter(
-          (dish) => dish.category && dish.category._id === categoryId
-        );
-        setDishes(filteredDishes);
-      } catch (error) {
-        window.alert(error.message);
-      }
-    };
-
-    if (categoryId) {
-      fetchDishes(); // Fetch dishes initially
-    }
-  }, [categoryId]); // Only trigger when categoryId changes
-
-  // Fetch sorted dishes based on sortOrder change
-  useEffect(() => {
-    const sortDishes = async () => {
-      try {
-        if (!categoryId) return; // Ensure categoryId exists before fetching sorted dishes
+        setLoading(true);
+        setError(null);
 
         const response = await fetch(
           `http://localhost:4000/api/categories/dishes/${categoryId}?sortOrder=${sortOrder}`
         );
-        if (!response.ok) throw new Error("Failed to fetch sorted dishes");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch dishes");
+        }
 
         const data = await response.json();
-        setDishes(data); // Update dishes with the sorted data
+        setDishes(data);
       } catch (error) {
-        window.alert(error.message);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Trigger sorting only when sortOrder changes
-    if (categoryId && sortOrder) {
-      sortDishes();
+    if (categoryId) {
+      fetchDishes();
     }
-  }, [sortOrder, categoryId]); // Trigger when sortOrder or categoryId changes
+  }, [categoryId, sortOrder]);
+
+  if (error) {
+    return <div className="p-4 text-center text-red-600">Error: {error}</div>;
+  }
 
   return (
     <div className="p-4">
@@ -73,31 +61,41 @@ const CategoryDishes = () => {
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {dishes.length > 0 ? (
-          dishes.map((dish) => (
-            <div
-              key={dish._id}
-              className="border border-gray-300 rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow"
-            >
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {dish.title}
-              </h3>
-              <img
-                src={dish.image[0]}
-                alt={dish.title}
-                className="w-full h-48 object-cover"
-              />
-              <p className="text-gray-700 mt-2">{dish.description}</p>
-              <p className="text-lg font-semibold text-gray-900 mt-2">
-                ${dish.price}
-              </p>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-500">No dishes available in this category.</p>
-        )}
-      </div>
+      {loading ? (
+        <div className="text-center">
+          <p className="text-gray-600">Loading dishes...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {dishes.length > 0 ? (
+            dishes.map((dish) => (
+              <div
+                key={dish._id}
+                className="border border-gray-300 rounded-lg p-4 shadow-lg hover:shadow-xl transition-shadow"
+              >
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  {dish.title}
+                </h3>
+                {dish.image && dish.image[0] && (
+                  <img
+                    src={dish.image[0]}
+                    alt={dish.title}
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
+                )}
+                <p className="text-gray-700 mt-2">{dish.description}</p>
+                <p className="text-lg font-semibold text-gray-900 mt-2">
+                  ${dish.price}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-500 col-span-3 text-center">
+              No dishes available in this category.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };
