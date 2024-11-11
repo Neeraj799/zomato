@@ -1,6 +1,13 @@
 import React from "react";
 
 const Navbar = () => {
+  const handleLogout = () => {
+    // Remove the token from localStorage
+    localStorage.removeItem("token");
+
+    // Redirect to the login page
+    window.location.href = "/signIn"; // Or wherever your login page is located
+  };
   return (
     <div>
       <div className="navbar bg-base-100">
@@ -57,6 +64,10 @@ const Navbar = () => {
           <a href="/cart" className="btn">
             Cart
           </a>
+
+          <button onClick={handleLogout} className="btn btn-ghost">
+            Logout
+          </button>
         </div>
       </div>
     </div>

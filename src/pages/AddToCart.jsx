@@ -6,6 +6,10 @@ const AddToCart = () => {
   const [selectedModifiers, setSelectedModifiers] = useState({});
   const [isModifierDropdownOpen, setIsModifierDropdownOpen] = useState({});
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [address, setAddress] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -174,6 +178,55 @@ const AddToCart = () => {
     }));
   };
 
+  // Add new function for checkout
+  const handleCheckoutSubmit = async () => {
+    if (!address.trim()) {
+      alert("Please enter a delivery address");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      console.log("token", token);
+      const orderData = {
+        items: cart.items.map((item) => ({
+          dish: item.dish._id,
+          quantity: item.quantity,
+          modifiers: item.modifiers.map((mod) => mod._id),
+        })),
+        totalAmount: parseFloat(calculateTotalAmount()),
+        address: address.trim(),
+      };
+
+      const response = await fetch("http://localhost:4000/api/cart/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token,
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to create order");
+      }
+
+      // Clear cart and close modal on success
+      setCart({ items: [] });
+      setIsModalOpen(false);
+      setAddress("");
+      alert("Order placed successfully!");
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      alert(error.message || "Failed to place order");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6">Your Cart</h1>
@@ -272,9 +325,68 @@ const AddToCart = () => {
             <p className="text-xl font-semibold mb-4">
               Total Amount: ${calculateTotalAmount()}
             </p>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
               Checkout
             </button>
+          </div>
+        </div>
+      )}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-w-[90%]">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold">Checkout</h2>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <p className="text-lg font-semibold mb-2">
+                Order Total: ${calculateTotalAmount()}
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Delivery Address
+              </label>
+              <textarea
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Enter your delivery address"
+                className="w-full p-2 border rounded-md h-24 resize-none"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckoutSubmit}
+                disabled={isLoading || !address.trim()}
+                className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 
+                  ${
+                    isLoading || !address.trim()
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+              >
+                {isLoading ? "Processing..." : "Place Order"}
+              </button>
+            </div>
           </div>
         </div>
       )}

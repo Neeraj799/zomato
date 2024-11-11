@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,8 @@ const SignIn = () => {
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,8 +50,7 @@ const SignIn = () => {
       localStorage.setItem("token", token);
 
       setMessage(data.message || "Logged in successfully");
-      // Redirect to dashboard or home page
-      // window.location.href = "/dashboard"; // example redirect
+      navigate("/");
     } catch (error) {
       setMessage(error.message || "An error occurred");
     } finally {
