@@ -47,6 +47,10 @@ const CategoryDishes = () => {
                 alt={dish.title}
                 className="w-full h-48 object-cover"
               />
+              <p className="text-gray-700 mt-2">{dish.description}</p>
+              <p className="text-lg font-semibold text-gray-900 mt-2">
+                ${dish.price}
+              </p>
             </div>
           ))
         ) : (

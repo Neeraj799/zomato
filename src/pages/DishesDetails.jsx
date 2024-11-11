@@ -1,4 +1,3 @@
-// DishesDetails.js
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -7,6 +6,7 @@ const DishesDetails = () => {
   const [dish, setDish] = useState({});
   const [modifiers, setModifiers] = useState([]);
   const [selectedModifiers, setSelectedModifiers] = useState([]);
+  const [quantity, setQuantity] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -45,30 +45,52 @@ const DishesDetails = () => {
         : [...prevSelected, modifierId]
     );
   };
-  console.log(selectedModifiers);
+
+  const handleQuantityChange = (e) => {
+    // Ensure we're working with a number and it's at least 1
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1) {
+      setQuantity(value);
+    }
+  };
 
   const handleAddToCart = async () => {
     try {
+      const token = localStorage.getItem("token");
+
+      // Create the request body with the correct quantity
+      const requestBody = {
+        dishId: dish._id,
+        modifierIds: selectedModifiers,
+        quantity: parseInt(quantity), // Ensure quantity is parsed as an integer
+      };
+
+      console.log("Sending request with body:", requestBody); // Debug log
+
       const response = await fetch("http://localhost:4000/api/cart/addItems", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token,
         },
-        body: JSON.stringify({
-          dishId: dish._id,
-          modifierIds: selectedModifiers,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add cart");
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to add to cart");
       }
 
+      const responseData = await response.json();
+      console.log("Response from server:", responseData); // Debug log
+
       setSelectedModifiers([]);
+      setQuantity(1);
       alert("Items added successfully");
       navigate("/cart");
     } catch (error) {
       alert(error.message);
+      console.error("Error adding to cart:", error); // Debug log
     }
   };
 
@@ -87,8 +109,25 @@ const DishesDetails = () => {
       <p className="text-xl font-semibold line-through">
         Actual Price: ${dish.actualPrice}
       </p>
-
       <p className="text-xl font-semibold">Price: ${dish.price}</p>
+
+      {/* Quantity Input with Label */}
+      <div className="mt-4">
+        <label
+          htmlFor="quantity"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          Quantity
+        </label>
+        <input
+          id="quantity"
+          type="number"
+          value={quantity}
+          onChange={handleQuantityChange}
+          className="w-20 px-2 py-1 border border-gray-300 rounded-md"
+          min="1"
+        />
+      </div>
 
       <button
         onClick={openModal}

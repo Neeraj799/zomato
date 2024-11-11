@@ -6,6 +6,8 @@ import DishesDetails from "./pages/DishesDetails";
 import CategoryDetails from "./pages/CategoryDetails";
 import DishList from "./pages/DishList";
 import CartPage from "./pages/AddToCart";
+import SignUp from "./pages/SignUp";
+import SignIn from "./pages/signIn";
 
 const App = () => {
   return (
@@ -14,6 +16,8 @@ const App = () => {
         <Navbar />
         <div className="pages">
           <Routes>
+            <Route path="/signUp" element={<SignUp />} />
+            <Route path="/signIn" element={<SignIn />} />
             <Route path="/" element={<Home />} />
             <Route path="/dishes/:id" element={<DishesDetails />} />
             <Route path="/category/:categoryId" element={<CategoryDetails />} />
