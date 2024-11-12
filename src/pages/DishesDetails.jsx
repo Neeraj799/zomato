@@ -6,7 +6,7 @@ const DishesDetails = () => {
   const [dish, setDish] = useState({});
   const [modifiers, setModifiers] = useState([]);
   const [selectedModifiers, setSelectedModifiers] = useState([]);
-  const [quantity, setQuantity] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
@@ -55,17 +55,20 @@ const DishesDetails = () => {
   };
 
   const handleAddToCart = async () => {
+    setIsModalOpen(true); // Open the modal to select modifiers when Add to Cart is clicked
+  };
+
+  const handleSubmit = async () => {
     try {
       const token = localStorage.getItem("token");
 
-      // Create the request body with the correct quantity
       const requestBody = {
         dishId: dish._id,
         modifierIds: selectedModifiers,
-        quantity: parseInt(quantity), // Ensure quantity is parsed as an integer
+        quantity: parseInt(quantity),
       };
 
-      console.log("Sending request with body:", requestBody); // Debug log
+      console.log("Sending request with body:", requestBody);
 
       const response = await fetch("http://localhost:4000/api/cart/addItems", {
         method: "POST",
@@ -87,14 +90,13 @@ const DishesDetails = () => {
       setSelectedModifiers([]);
       setQuantity(1);
       alert("Items added successfully");
-      navigate("/cart");
+      navigate("/cart"); // Navigate to the cart page after submitting
     } catch (error) {
       alert(error.message);
       console.error("Error adding to cart:", error); // Debug log
     }
   };
 
-  const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   return (
@@ -110,7 +112,13 @@ const DishesDetails = () => {
         Actual Price: ${dish.actualPrice}
       </p>
       <p className="text-xl font-semibold">Price: ${dish.price}</p>
-
+      <p className="mt-2 text-gray-600">
+        Categories:{" "}
+        {dish.categories?.map((category) => category.name).join(", ")}
+      </p>
+      <p className="mt-2 text-gray-600">
+        Modifiers: {dish.modifiers?.map((mod) => mod.name).join(", ")}
+      </p>
       {/* Quantity Input with Label */}
       <div className="mt-4">
         <label
@@ -129,25 +137,14 @@ const DishesDetails = () => {
         />
       </div>
 
-      <button
-        onClick={openModal}
-        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-      >
-        Choose Modifiers
-      </button>
-
-      {selectedModifiers.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold mb-2">Selected Modifiers:</h3>
-          <ul className="list-disc list-inside text-gray-700">
-            {modifiers
-              .filter((modifier) => selectedModifiers.includes(modifier._id))
-              .map((modifier) => (
-                <li key={modifier._id}>{modifier.name}</li>
-              ))}
-          </ul>
-        </div>
-      )}
+      <div>
+        <button
+          onClick={handleAddToCart}
+          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Add to Cart
+        </button>
+      </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
@@ -183,7 +180,7 @@ const DishesDetails = () => {
                 Cancel
               </button>
               <button
-                onClick={closeModal}
+                onClick={handleSubmit}
                 className="px-4 py-2 bg-blue-600 text-white rounded"
               >
                 Confirm
@@ -192,15 +189,6 @@ const DishesDetails = () => {
           </div>
         </div>
       )}
-
-      <div>
-        <button
-          onClick={handleAddToCart}
-          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          Add to Cart
-        </button>
-      </div>
     </div>
   );
 };

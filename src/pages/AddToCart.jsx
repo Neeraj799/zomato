@@ -8,6 +8,11 @@ const AddToCart = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [address, setAddress] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -62,11 +67,11 @@ const AddToCart = () => {
     }
   };
 
-  const handleRemoveItem = async (dishId) => {
+  const handleRemoveItem = async (item) => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:4000/api/cart/deleteItem/${dishId}`,
+        `http://localhost:4000/api/cart/deleteItem/${item._id}`,
         {
           method: "DELETE",
           headers: {
@@ -87,11 +92,11 @@ const AddToCart = () => {
     }
   };
 
-  const updateCartItem = async (dishId, quantity, modifierIds) => {
+  const updateCartItem = async (itemId, quantity, modifierIds) => {
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(
-        `http://localhost:4000/api/cart/updateItem/${dishId}`,
+        `http://localhost:4000/api/cart/updateItem/${itemId}`,
         {
           method: "PATCH",
           headers: {
@@ -99,7 +104,7 @@ const AddToCart = () => {
             Authorization: token,
           },
           body: JSON.stringify({
-            dishId,
+            itemId,
             quantity: parseInt(quantity),
             modifierIds,
           }),
@@ -141,54 +146,60 @@ const AddToCart = () => {
       .toFixed(2);
   };
 
-  const handleModifiersChange = async (dishId, modifierId, event) => {
-    const item = cart.items.find((item) => item.dish._id === dishId);
-    if (!item) return;
+  const handleModifiersChange = async (itemId, modifierId, event) => {
+    const cartItem = cart.items.find((item) => item._id === itemId);
+    if (!cartItem) return;
 
     let newModifierIds;
     if (event.target.checked) {
       // Add modifier
-      newModifierIds = [...item.modifiers.map((m) => m._id), modifierId];
+      newModifierIds = [...cartItem.modifiers.map((m) => m._id), modifierId];
     } else {
       // Remove modifier
-      newModifierIds = item.modifiers
+      newModifierIds = cartItem.modifiers
         .map((m) => m._id)
         .filter((id) => id !== modifierId);
     }
 
-    await updateCartItem(dishId, item.quantity, newModifierIds);
+    await updateCartItem(itemId, cartItem.quantity, newModifierIds);
   };
 
-  const handleQuantityChange = async (dishId, newQuantity) => {
-    const item = cart.items.find((item) => item.dish._id === dishId);
+  const handleQuantityChange = async (itemId, newQuantity) => {
+    const item = cart.items.find((item) => item._id === itemId);
     if (!item) return;
 
     const quantity = Math.max(1, parseInt(newQuantity) || 1);
     await updateCartItem(
-      dishId,
+      itemId,
       quantity,
       item.modifiers.map((m) => m._id)
     );
   };
 
-  const toggleModifierDropdown = (dishId) => {
+  const toggleModifierDropdown = (itemId) => {
     setIsModifierDropdownOpen((prev) => ({
       ...prev,
-      [dishId]: !prev[dishId],
+      [itemId]: !prev[itemId],
     }));
   };
 
   // Add new function for checkout
   const handleCheckoutSubmit = async () => {
-    if (!address.trim()) {
-      alert("Please enter a delivery address");
+    if (
+      !fullName.trim() ||
+      !mobile.trim() ||
+      !address.trim() ||
+      !city.trim() ||
+      !state.trim() ||
+      !pincode.trim
+    ) {
+      alert("Please fill in all required fields.");
       return;
     }
 
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      console.log("token", token);
       const orderData = {
         items: cart.items.map((item) => ({
           dish: item.dish._id,
@@ -196,7 +207,14 @@ const AddToCart = () => {
           modifiers: item.modifiers.map((mod) => mod._id),
         })),
         totalAmount: parseFloat(calculateTotalAmount()),
+
+        fullName: fullName.trim(),
         address: address.trim(),
+        mobile: mobile.trim(),
+        street: address.trim(),
+        city: city.trim(),
+        state: state.trim(),
+        pincode: pincode.trim(),
       };
 
       const response = await fetch("http://localhost:4000/api/cart/checkout", {
@@ -217,7 +235,12 @@ const AddToCart = () => {
       // Clear cart and close modal on success
       setCart({ items: [] });
       setIsModalOpen(false);
+      setFullName("");
+      setMobile("");
       setAddress("");
+      setCity("");
+      setState("");
+      setPincode("");
       alert("Order placed successfully!");
     } catch (error) {
       console.error("Error during checkout:", error);
@@ -252,14 +275,31 @@ const AddToCart = () => {
                   <h2 className="font-semibold">{item.dish?.title}</h2>
                   <p className="text-sm">Price: ${item.dish?.price}</p>
 
-                  {/* Quantity Input */}
                   <div className="mt-2">
+                    <p className="text-sm font-medium">Selected Modifiers:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {item.modifiers.map((modifier) => (
+                        <span
+                          key={modifier._id}
+                          className="bg-gray-100 px-2 py-1 rounded-md text-sm"
+                        >
+                          {modifier.name}
+                        </span>
+                      ))}
+                      {item.modifiers.length === 0 && (
+                        <span className="text-gray-500 italic">None</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-2">
+                    <p className="text-sm font-medium">Quantity</p>
                     <input
                       type="number"
                       value={item.quantity}
                       min="1"
                       onChange={(e) =>
-                        handleQuantityChange(item.dish._id, e.target.value)
+                        handleQuantityChange(item._id, e.target.value)
                       }
                       className="w-20 p-1 border border-gray-300 rounded"
                     />
@@ -270,13 +310,13 @@ const AddToCart = () => {
               {/* Modifiers Section */}
               <div className="mt-4 md:mt-0 relative">
                 <button
-                  onClick={() => toggleModifierDropdown(item.dish._id)}
+                  onClick={() => toggleModifierDropdown(item._id)}
                   className="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200"
                 >
                   Modifiers
                 </button>
 
-                {isModifierDropdownOpen[item.dish._id] && (
+                {isModifierDropdownOpen[item._id] && (
                   <div className="absolute right-0 mt-2 w-64 bg-white border rounded-lg shadow-lg z-10">
                     {modifiers.map((modifier) => (
                       <label
@@ -289,11 +329,7 @@ const AddToCart = () => {
                             (mod) => mod._id === modifier._id
                           )}
                           onChange={(e) =>
-                            handleModifiersChange(
-                              item.dish._id,
-                              modifier._id,
-                              e
-                            )
+                            handleModifiersChange(item._id, modifier._id, e)
                           }
                           className="mr-2"
                         />
@@ -312,7 +348,7 @@ const AddToCart = () => {
                   {calculateItemTotal(item.dish, item.modifiers, item.quantity)}
                 </p>
                 <button
-                  onClick={() => handleRemoveItem(item.dish._id)}
+                  onClick={() => handleRemoveItem(item)}
                   className="text-red-600 hover:text-red-800"
                 >
                   Remove
@@ -353,6 +389,35 @@ const AddToCart = () => {
               </p>
             </div>
 
+            {/* Full Name Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full p-2 border rounded-md"
+                required
+              />
+            </div>
+
+            {/* Mobile Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Mobile</label>
+              <input
+                type="tel"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value)}
+                placeholder="Enter your mobile number"
+                className="w-full p-2 border rounded-md"
+                required
+              />
+            </div>
+
+            {/* Delivery Address Field */}
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2">
                 Delivery Address
@@ -362,6 +427,44 @@ const AddToCart = () => {
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="Enter your delivery address"
                 className="w-full p-2 border rounded-md h-24 resize-none"
+                required
+              />
+            </div>
+
+            {/* City Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">City</label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Enter your city"
+                className="w-full p-2 border rounded-md"
+                required
+              />
+            </div>
+
+            {/* State Field */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">State</label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="Enter your state"
+                className="w-full p-2 border rounded-md"
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">Pincode</label>
+              <input
+                type="Number"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                placeholder="Enter your state"
+                className="w-full p-2 border rounded-md"
                 required
               />
             </div>
@@ -376,13 +479,27 @@ const AddToCart = () => {
               </button>
               <button
                 onClick={handleCheckoutSubmit}
-                disabled={isLoading || !address.trim()}
+                disabled={
+                  isLoading ||
+                  !fullName.trim() ||
+                  !mobile.trim() ||
+                  !address.trim() ||
+                  !city.trim() ||
+                  !state.trim() ||
+                  !pincode.trim()
+                }
                 className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 
-                  ${
-                    isLoading || !address.trim()
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
+            ${
+              isLoading ||
+              !fullName.trim() ||
+              !mobile.trim() ||
+              !address.trim() ||
+              !city.trim() ||
+              !state.trim() ||
+              !pincode.trim()
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
               >
                 {isLoading ? "Processing..." : "Place Order"}
               </button>

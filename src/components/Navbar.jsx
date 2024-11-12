@@ -53,10 +53,10 @@ const Navbar = () => {
               <a href="/">Home</a>
             </li>
             <li>
-              <a>Category</a>
+              <a href="/dishes">Dishes</a>
             </li>
             <li>
-              <a>Modifiers</a>
+              <a href="/orders">Orders</a>
             </li>
           </ul>
         </div>

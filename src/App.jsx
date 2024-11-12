@@ -8,6 +8,8 @@ import DishList from "./pages/DishList";
 import CartPage from "./pages/AddToCart";
 import SignUp from "./pages/SignUp";
 import SignIn from "./pages/signIn";
+import Dishes from "./pages/Dishes";
+import OrdersList from "./pages/OrdersList";
 
 const App = () => {
   return (
@@ -23,6 +25,8 @@ const App = () => {
             <Route path="/category/:categoryId" element={<CategoryDetails />} />
             <Route path="/dishList" element={<DishList />} />
             <Route path="/cart" element={<CartPage />} />
+            <Route path="/dishes" element={<Dishes />} />
+            <Route path="/orders" element={<OrdersList />} />
           </Routes>
         </div>
       </BrowserRouter>

@@ -47,26 +47,26 @@ const DishList = () => {
     fetchDishes();
     fetchCategories();
   }, []);
-  console.log("dishes", dishes);
 
   useEffect(() => {
     let updatedDishes = [...dishes];
 
+    // Filter by selected category
     if (selectedCategory !== "all") {
       updatedDishes = updatedDishes.filter(
-        (dish) => dish.category && dish.category.name === selectedCategory
+        (dish) => dish.categories && dish.categories.name === selectedCategory
       );
     }
 
+    // Sort by price based on selected sort order
     if (sortOrder === "asc") {
       updatedDishes.sort((a, b) => a.price - b.price);
     } else if (sortOrder === "desc") {
       updatedDishes.sort((a, b) => b.price - a.price);
     }
 
-    setFilteredDishes(updatedDishes);
-    console.log("updateddishes", updatedDishes);
-  }, [dishes, selectedCategory, sortOrder]);
+    setFilteredDishes(updatedDishes); // Update filteredDishes state
+  }, [dishes, selectedCategory, sortOrder]); // Re-run when dishes, selectedCategory, or sortOrder changes
 
   return (
     <div className="p-4">
